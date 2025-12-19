@@ -2,73 +2,31 @@
 
 ## 1. Project Goal
 
-This project implements a small domain-specific language (DSL) designed to configure and run drift detection for machine learning models (data drift and concept drift). "Embedding drift" refers to shifts in a neural network's embedding outputs caused by changes in incoming data, indicating that the underlying data distribution or patterns have changed.
+This project implements a small domain-specific language (DSL) to configure and run drift detection for machine learning systems (data drift and concept drift). "Embedding drift" describes shifts in neural-network embeddings caused by changes in incoming data, which can signal changes in data distribution or behavior.
 
-Primary project responsibilities:
+Key objectives:
 
-- Design the DSL and define its grammar.
-- Implement the lexical and syntactic analyzer (parser).
-- Add semantic validation and helpful error handling.
-- Create and run test cases.
-- Document the development process.
+- Define the DSL syntax and grammar.
+- Implement a lexer/parser and produce an AST.
+- Add semantic validation and helpful error messages.
+- Provide test cases and automation.
+- Document development and usage.
 
 ---
 
 ## 2. Language Design
 
-### 2.1 Purpose and Use
+### Purpose
 
-The DSL lets users configure which data sources to monitor, at what intervals, and with which statistical or distance-based methods to check for drift.
+The DSL allows users to declare monitors that compare a live data source against a baseline using specified drift detection methods at a configured interval.
 
-### 2.2 Keywords and Symbols
+### Keywords and tokens
 
-- `monitor`, `source`, `baseline`, `drift_check`, `feature_drift`, `metadata`, `alert`
-- Time units: `minutes`, `hours`, `daily`, `weekly`, `monthly`
-- Methods: `wasserstein_distance`, `kl_divergence`, `psi`
 
-### 2.3 Syntactic Constructs
+### Constructs
 
-1. Sequence: required ordering inside a block.
 
-```plaintext
-monitor MyModel {
-    source: prod_db
-    baseline: train_db
-    drift_check ...
-}
-```
-
-2. Choice/alternation: select from predefined values inside a block.
-
-```plaintext
-// inside a drift_check block:
-method: wasserstein_distance | kl_divergence | psi
-```
-
-3. Repetition: lists of items.
-```plaintext
-alert: slack, email, pagerduty
-feature_drift on [age, income, zip_code]
-```
-
-4. Optional structures: non-mandatory blocks.
-
-```plaintext
-feature_drift on [feature1, feature2]
-metadata { ... }
-```
-
-5. Aggregation: composed configuration objects.
-
-```plaintext
-MonitorConfig {
-    DriftCheckConfig
-    FeatureDriftConfig
-    MetadataConfig
-}
-```
-
-### 2.4 Example Input
+Example:
 
 ```plaintext
 monitor MyModel {
@@ -93,61 +51,19 @@ monitor MyModel {
 }
 ```
 
-### 2.5 Grammar and Parser
+### Grammar and parser
 
-The grammar is implemented using JavaCC.
+The grammar is implemented with JavaCC. Tokens include keywords, identifiers, numeric literals, string literals and a few special symbols. Whitespace and comments are skipped via `SKIP` rules.
 
-#### Options
+Key grammar rules:
 
-```java
-options {
-  STATIC = false;
-  DEBUG_PARSER = false;
-  JDK_VERSION = "1.8";
-}
-```
 
-#### Parser top-level
-
-```java
-PARSER_BEGIN(DriftConfigParser)
-package parser;
-import ast.*;
-import java.util.ArrayList;
-import java.util.List;
-
-public class DriftConfigParser {}
-PARSER_END(DriftConfigParser)
-```
-
-#### Tokens
-
-Whitespace and comments:
-
-```java
-SKIP : { " " | "\t" | "\n" | "\r" | <"//" (~["\n","\r"])* ("\n"|"\r"|"\r\n")> | <"/*" (~["*"])* "*" ("*" | (~["*","/"] (~["*"])* "*"))* "/"> }
-```
-
-Keywords, time units, symbols and literals are defined as separate TOKENs in the parser.
-
-#### Grammar rules
-
-- `Root()`: one or more `MonitorBlock`
-- `MonitorBlock()`: required fields `source`, `baseline`, `drift_check`; optional `feature_drift`, `metadata`
-- `DriftCheckBlock()`: sequence with repetition and optional pieces
-- `FeatureDriftBlock()`: repeated elements, optional values
-- `MetadataBlock()`: optional `description`, aggregation
-
----
 
 ## 3. Elemző Generátor Választása
 
 ### JavaCC (Java Compiler Compiler)
 
-A projekt elemzőjét a **JavaCC** segítségével generáltuk, amely a legelterjedtebb parser generátor Java környezethez.
-
 * **Technológia:** **LL(k)** típusú, **Top-Down**  elemző.
-* **Működési elv:**
     * **Top-Down:** A legfelső szabálytól (gyökér) indulva bontja le a bemenetet elemi tokenekre.
     * **Lookahead (k):** Képes *k* lépéssel előretekinteni, ami elengedhetetlen a kétértelmű nyelvtani helyzetek (pl. `30_minutes` vs. `variable_name`) feloldásához.
 * **Kiemelt előnyök a projektben:**
@@ -167,27 +83,22 @@ A projekt elemzőjét a **JavaCC** segítségével generáltuk, amely a legelter
 ### 4.2 Tesztelés
 
 * 11 teszteset (5 pozitív, 6 negatív)
-* Pozitív: helyes szintaxis, opcionális blokkok variálása, teljes funkcionalitás
 * Negatív: szintaxis és szemantikai hibák
 
 #### Minta Kimenet
 
 Sikeres futás:
 
-```plaintext
 Processing: test1.drift
 Validation Successful.
 -> Generated Python Script: generated/test1.py
 ```
 
-Hibakezelés:
 
 ```plaintext
 Parse Error:
 Line 4, Column 20
 Encountered: "wassertein_distance"
-Did you mean 'wasserstein_distance'?
-```
 
 ### 4.3 Python Kód Generálás
 
@@ -211,12 +122,9 @@ Az alapértelmezett `ParseException` üzenetek gyakran nem nyújtanak elég seg�
 ---
 
 ## 6. Adatstruktúra (AST Vizualizáció)
-
 A parser a bemeneti szöveg feldolgozása során egy hierarchikus objektummodellt, úgynevezett Absztrakt Szintaxis Fát (AST) épít fel. Ez a struktúra képezi az alapját a későbbi validációnak és kódgenerálásnak.
 
 Az alábbi ábra a `MonitorConfig` objektum felépítését szemlélteti:
-
-```text
 MonitorConfig (Gyökérelem)
  │
  ├── monitorName: String ("FraudModel")

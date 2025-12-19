@@ -131,7 +131,7 @@ SKIP : { " " | "\t" | "\n" | "\r" | <"//" (~["\n","\r"])* ("\n"|"\r"|"\r\n")> | 
 
 Kulcsszavak, időegységek, szimbólumok és literálok a parserben külön TOKEN-ekként definiáltak.
 
-#### Grammar szabályok
+#### Nyelvtan szabályok
 
 * `Root()`: Egy vagy több `MonitorBlock`
 * `MonitorBlock()`: Kötelező mezők: `source`, `baseline`, `drift_check`; opcionális: `feature_drift`, `metadata`
@@ -258,7 +258,7 @@ javac -d bin -sourcepath src src/main/*.java src/ast/*.java src/parser/*.java
 ### Futtatás
 
 ```bash
-# Egy fájl elemzése és Python generálása
+# Egy fájl elemzése és Python generálása, ha nem akarunk pzthon scriptet generálni -g flag elhagyása
 java -cp bin main.Main test/positive/test1.drift -g
 # Teljes tesztkészlet
 java -cp bin main.Main --run-all-tests
