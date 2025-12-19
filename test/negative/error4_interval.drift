@@ -1,0 +1,9 @@
+monitor BadLogic {
+    source: s
+    baseline: b
+    drift_check every -10_minutes { // Logikailag hibás
+        method: psi
+        threshold: 0.1
+        alert: slack
+    }
+}

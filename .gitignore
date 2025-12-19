@@ -1,0 +1,33 @@
+# Java build/classes
+bin/
+**/*.class
+
+# Java build metadata
+target/
+build/
+out/
+
+# Generated/derived files
+generated/
+__azurite_db_table__.json
+
+
+# IDE/editor
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and temp
+*.log
+*.tmp
+
+# Java tooling
+.gradle/
+.mvn/
+.settings/
+.classpath
+.project

@@ -1,0 +1,19 @@
+monitor ComplexMonitor {
+    source: kafka_main
+    baseline: training_set_q1
+    drift_check every 1_daily {
+        method: kl_divergence
+        threshold: 0.05
+        alert: slack, pagerduty, email
+        severity: critical
+    }
+    feature_drift on [age, income, zip_code] {
+        method: chi_square
+        significance: 0.01
+    }
+    metadata {
+        owner: "DataTeam"
+        version: "2.0.0"
+        description: "Full production monitor"
+    }
+}

@@ -1,0 +1,11 @@
+monitor BadConfig {
+    source: production_stream
+    baseline: training_set_v1
+    
+    // ERROR: Missing the underscore between 30 and minutes
+    drift_check every 30 minutes { 
+        method: psi
+        threshold: 0.2
+        alert: slack
+    }
+}

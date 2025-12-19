@@ -1,0 +1,9 @@
+monitor test_model_idk {
+    source: production
+    baseline: training_set_v3
+    drift_check every 2_hours {
+        method: wasserstein_distance
+        threshold: 0.10
+        alert: slack, email
+    }
+}

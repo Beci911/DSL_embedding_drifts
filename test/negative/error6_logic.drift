@@ -1,0 +1,16 @@
+monitor BrokenLogicMonitor {
+    source: my_source
+    baseline: my_baseline
+
+    // SYNTAX IS OK, BUT LOGIC IS WRONG (Threshold > 1.0)
+    drift_check every 10_minutes {
+        method: psi
+        threshold: 5.5  
+        alert: email
+    }
+
+    feature_drift on [salary] {
+        method: chi_square
+        significance: -0.05 
+    }
+}

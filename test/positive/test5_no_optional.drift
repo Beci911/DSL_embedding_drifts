@@ -1,0 +1,9 @@
+monitor BareBone {
+    source: stream
+    baseline: static
+    drift_check every 10_minutes {
+        method: psi
+        threshold: 0.1
+        alert: log
+    }
+}

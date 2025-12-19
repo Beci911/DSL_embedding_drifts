@@ -1,0 +1,180 @@
+options {
+  STATIC = false;
+  DEBUG_PARSER = false;
+  JDK_VERSION = "1.8";
+}
+
+PARSER_BEGIN(DriftConfigParser)
+package parser;
+import ast.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class DriftConfigParser {
+}
+PARSER_END(DriftConfigParser)
+
+/* ========================================================================== */
+/* TOKENS                                                                     */
+/* ========================================================================== */
+
+// Skip whitespace AND comments
+SKIP : {
+  " " | "\t" | "\n" | "\r"
+| <"//" (~["\n","\r"])* ("\n"|"\r"|"\r\n")>
+| <"/*" (~["*"])* "*" ("*" | (~["*","/"] (~["*"])* "*"))* "/">
+}
+
+// Keywords
+TOKEN : {
+  < MONITOR: "monitor" >
+| < SOURCE: "source" >
+| < BASELINE: "baseline" >
+| < DRIFT_CHECK: "drift_check" >
+| < EVERY: "every" >
+| < METHOD: "method" >
+| < THRESHOLD: "threshold" >
+| < ALERT: "alert" >
+| < SEVERITY: "severity" >
+| < FEATURE_DRIFT: "feature_drift" >
+| < ON: "on" >
+| < SIGNIFICANCE: "significance" >
+| < METADATA: "metadata" >
+| < OWNER: "owner" >
+| < VERSION: "version" >
+| < DESCRIPTION: "description" >
+}
+
+// Time Units (Must be defined BEFORE Identifier to prevent masking)
+TOKEN : {
+  < TIME_UNIT: "minutes" | "hours" | "daily" | "weekly" | "monthly" >
+}
+
+// Symbols
+TOKEN : {
+  < LBRACE: "{" >
+| < RBRACE: "}" >
+| < COLON: ":" >
+| < COMMA: "," >
+| < LBRACKET: "[" >
+| < RBRACKET: "]" >
+| < UNDERSCORE: "_" >
+}
+
+// Literals and Identifiers
+TOKEN : {
+  < NUMBER: (["-"])? (["0"-"9"])+ >
+| < FLOAT: (["-"])? (["0"-"9"])+ "." (["0"-"9"])+ >
+| < IDENTIFIER: ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","0"-"9","_"])* >
+| < STRING_LITERAL: "\"" (~["\""])* "\"" >
+}
+
+/* ========================================================================== */
+/* GRAMMAR RULES                                                              */
+/* ========================================================================== */
+
+List<MonitorConfig> Root() :
+{
+  List<MonitorConfig> configs = new ArrayList<MonitorConfig>();
+  MonitorConfig c;
+}
+{
+  ( c = MonitorBlock() { configs.add(c); } )+
+  <EOF>
+  { return configs; }
+}
+
+MonitorConfig MonitorBlock() :
+{
+  MonitorConfig config = new MonitorConfig();
+  Token t;
+}
+{
+  <MONITOR> t = <IDENTIFIER> { config.monitorName = t.image; }
+  <LBRACE>
+    <SOURCE> <COLON> t = <IDENTIFIER> { config.source = t.image; }
+    <BASELINE> <COLON> t = <IDENTIFIER> { config.baseline = t.image; }
+    
+    config.driftCheck = DriftCheckBlock()
+    [ config.featureDrift = FeatureDriftBlock() ]
+    [ config.metadata = MetadataBlock() ]
+    
+  <RBRACE>
+  { return config; }
+}
+
+DriftCheckConfig DriftCheckBlock() :
+{
+  DriftCheckConfig dcc = new DriftCheckConfig();
+  Token tNum, tUnit, tVal, tMethod, tAlert, tSev;
+}
+{
+  <DRIFT_CHECK> <EVERY> tNum = <NUMBER> <UNDERSCORE> tUnit = <TIME_UNIT> 
+  { 
+      dcc.intervalNumber = Integer.parseInt(tNum.image);
+      dcc.intervalUnit = tUnit.image;
+  }
+  <LBRACE>
+    <METHOD> <COLON> tMethod = <IDENTIFIER> { dcc.method = tMethod.image; }
+    
+    // FIX 1: Allow NUMBER or FLOAT for threshold to prevent errors on integers
+    <THRESHOLD> <COLON> 
+    ( 
+      tVal = <FLOAT> { dcc.threshold = Double.parseDouble(tVal.image); }
+    | 
+      tVal = <NUMBER> { dcc.threshold = Double.parseDouble(tVal.image); } 
+    )
+    
+    <ALERT> <COLON> tAlert = <IDENTIFIER> { dcc.alertChannels.add(tAlert.image); }
+    ( <COMMA> tAlert = <IDENTIFIER> { dcc.alertChannels.add(tAlert.image); } )*
+    
+    [ <SEVERITY> <COLON> tSev = <IDENTIFIER> { dcc.severity = tSev.image; } ]
+  <RBRACE>
+  { return dcc; }
+}
+
+FeatureDriftConfig FeatureDriftBlock() :
+{
+  FeatureDriftConfig fdc = new FeatureDriftConfig();
+  Token tFeat, tMethod, tSig;
+}
+{
+  <FEATURE_DRIFT> <ON> <LBRACKET> 
+    tFeat = <IDENTIFIER> { fdc.features.add(tFeat.image); }
+    ( <COMMA> tFeat = <IDENTIFIER> { fdc.features.add(tFeat.image); } )*
+  <RBRACKET>
+  <LBRACE>
+    <METHOD> <COLON> tMethod = <IDENTIFIER> { fdc.method = tMethod.image; }
+    
+    // FIX 1 (Applied here too): Allow NUMBER or FLOAT
+    <SIGNIFICANCE> <COLON> 
+    (
+       tSig = <FLOAT> { fdc.significance = Double.parseDouble(tSig.image); }
+     | 
+       tSig = <NUMBER> { fdc.significance = Double.parseDouble(tSig.image); }
+    )
+    
+  <RBRACE>
+  { return fdc; }
+}
+
+MetadataConfig MetadataBlock() :
+{
+  MetadataConfig mc = new MetadataConfig();
+  Token tOwner, tVer, tDesc;
+}
+{
+  <METADATA> <LBRACE>
+    // FIX 2: Use substring to remove surrounding quotes safely
+    <OWNER> <COLON> tOwner = <STRING_LITERAL> 
+    { mc.owner = tOwner.image.substring(1, tOwner.image.length() - 1); }
+    
+    <VERSION> <COLON> tVer = <STRING_LITERAL> 
+    { mc.version = tVer.image.substring(1, tVer.image.length() - 1); }
+    
+    [ <DESCRIPTION> <COLON> tDesc = <STRING_LITERAL> 
+      { mc.description = tDesc.image.substring(1, tDesc.image.length() - 1); } 
+    ]
+  <RBRACE>
+  { return mc; }
+}

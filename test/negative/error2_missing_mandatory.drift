@@ -1,0 +1,9 @@
+monitor Broken {
+    source: my_source
+    // Baseline missing!
+    drift_check every 1_hour {
+        method: psi
+        threshold: 0.1
+        alert: slack
+    }
+}

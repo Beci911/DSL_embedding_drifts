@@ -1,0 +1,9 @@
+monitor MinimalAlert {
+    source: s1
+    baseline: b1
+    drift_check every 4_hours {
+        method: mmd
+        threshold: 0.1
+        alert: console
+    }
+}

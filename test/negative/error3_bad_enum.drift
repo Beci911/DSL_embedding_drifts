@@ -1,0 +1,9 @@
+monitor BadTime {
+    source: s
+    baseline: b
+    drift_check every 5_seconds { // "seconds" nem létezik a nyelvben
+        method: psi
+        threshold: 0.1
+        alert: slack
+    }
+}

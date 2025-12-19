@@ -1,0 +1,19 @@
+monitor ModelA {
+    source: src_a
+    baseline: base_a
+    drift_check every 1_hours {
+        method: psi
+        threshold: 0.1
+        alert: email
+    }
+}
+
+monitor ModelB {
+    source: src_b
+    baseline: base_b
+    drift_check every 30_minutes {
+        method: wasserstein_distance
+        threshold: 0.2
+        alert: slack
+    }
+}

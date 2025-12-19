@@ -1,0 +1,13 @@
+monitor EmptyFeatures {
+    source: s
+    baseline: b
+    drift_check every 1_hour {
+        method: psi
+        threshold: 0.1
+        alert: slack
+    }
+    feature_drift on [] { // Üres lista nem engedélyezett
+        method: chi_square
+        significance: 0.05
+    }
+}
