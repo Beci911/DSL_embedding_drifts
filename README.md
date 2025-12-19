@@ -2,15 +2,15 @@
 
 ## 1. Project Goal
 
-This project implements a small domain-specific language (DSL) to configure and run drift detection for machine learning systems (data drift and concept drift). "Embedding drift" describes shifts in neural-network embeddings caused by changes in incoming data, which can signal changes in data distribution or behavior.
+This project implements a small domain-specific language (DSL) to configure and run drift detection for machine learning systems (data drift and concept drift). "Embedding drift" refers to shifts in neural network embeddings caused by changes in incoming data, which can indicate changes in data distribution or system behavior.
 
 Key objectives:
 
-- Define the DSL syntax and grammar.
-- Implement a lexer/parser and produce an AST.
-- Add semantic validation and helpful error messages.
-- Provide test cases and automation.
-- Document development and usage.
+* Define the DSL syntax and grammar.
+* Implement a lexer/parser and produce an AST.
+* Add semantic validation and helpful error messages.
+* Provide test cases and automation.
+* Document development and usage.
 
 ---
 
@@ -20,11 +20,11 @@ Key objectives:
 
 The DSL allows users to declare monitors that compare a live data source against a baseline using specified drift detection methods at a configured interval.
 
-### Keywords and tokens
+### Keywords and Tokens
 
+*(To be defined in detail: keywords, identifiers, literals, symbols, etc.)*
 
 ### Constructs
-
 
 Example:
 
@@ -51,110 +51,128 @@ monitor MyModel {
 }
 ```
 
-### Grammar and parser
+### Grammar and Parser
 
-The grammar is implemented with JavaCC. Tokens include keywords, identifiers, numeric literals, string literals and a few special symbols. Whitespace and comments are skipped via `SKIP` rules.
+The grammar is implemented using JavaCC. Tokens include keywords, identifiers, numeric literals, string literals, and a few special symbols. Whitespace and comments are skipped via `SKIP` rules.
 
 Key grammar rules:
 
+*(Details to be added here.)*
 
+---
 
-## 3. Elemző Generátor Választása
+## 3. Parser Generator Choice
 
 ### JavaCC (Java Compiler Compiler)
 
-* **Technológia:** **LL(k)** típusú, **Top-Down**  elemző.
-    * **Top-Down:** A legfelső szabálytól (gyökér) indulva bontja le a bemenetet elemi tokenekre.
-    * **Lookahead (k):** Képes *k* lépéssel előretekinteni, ami elengedhetetlen a kétértelmű nyelvtani helyzetek (pl. `30_minutes` vs. `variable_name`) feloldásához.
-* **Kiemelt előnyök a projektben:**
-    * **Kódinjektálás:** A Java kód közvetlenül a `.jj` nyelvtanfájlba ágyazható, így az **AST (Absztrakt Szintaxis Fa)** építése valós időben, az elemzéssel párhuzamosan történik, utólagos bejárás nélkül.
-    * **Típusbiztonság:** A generált kód statikusan típusos Java, ami közvetlen integrációt tesz lehetővé a szemantikai **Validator** modullal.
-    * **Megfelelőség:** Teljesíti a "Nem Python-alapú elemző" használatáért járó pluszpont követelményét.
+* **Technology:** **LL(k)** type, **Top-Down** parser.
 
-## 4. Implementáció
+  * **Top-Down:** Starts from the top-level rule (root) and breaks down input into elemental tokens.
+  * **Lookahead (k):** Can look *k* steps ahead, essential for resolving ambiguous grammar situations (e.g., `30_minutes` vs. `variable_name`).
+* **Key advantages for this project:**
 
-### 4.1 Fő Modulok
+  * **Code Injection:** Java code can be embedded directly into the `.jj` grammar file, allowing AST (Abstract Syntax Tree) construction in real time during parsing, without post-traversal.
+  * **Type Safety:** Generated code is statically typed Java, enabling direct integration with the semantic **Validator** module.
+  * **Compliance:** Meets the requirement of using a non-Python-based parser.
 
-1. Parser (szintaktikai elemzés JavaCC-vel)
-2. Validator (szemantikai ellenőrzés)
-3. Generator (Python kód generálása a konfigurációból)
-4. ErrorHandler (intelligens hibajavítás)
+---
 
-### 4.2 Tesztelés
+## 4. Implementation
 
-* 11 teszteset (5 pozitív, 6 negatív)
-* Negatív: szintaxis és szemantikai hibák
+### 4.1 Main Modules
 
-#### Minta Kimenet
+1. **Parser** (syntactic analysis using JavaCC)
+2. **Validator** (semantic validation)
+3. **Generator** (Python code generation from the configuration)
+4. **ErrorHandler** (intelligent error correction)
 
-Sikeres futás:
+### 4.2 Testing
 
+* 11 test cases (5 positive, 6 negative)
+* Negative: syntax and semantic errors
+
+#### Sample Output
+
+Successful run:
+
+```plaintext
 Processing: test1.drift
 Validation Successful.
 -> Generated Python Script: generated/test1.py
 ```
 
+Parse error example:
 
 ```plaintext
 Parse Error:
 Line 4, Column 20
 Encountered: "wassertein_distance"
+```
 
-### 4.3 Python Kód Generálás
+### 4.3 Python Code Generation
 
-A `PythonGenerator` osztály a monitor konfigurációból Python szkriptet generál, amely a drift és feature drift ellenőrzéseket futtatja.
-
----
-
-## 5. Fejlesztési Kihívások és Megoldások
-
-A fejlesztés során több technikai akadályt kellett leküzdeni a robusztus működés érdekében:
-
-### 5.1. Token Ütközések és "Greedy Matching"
-A lexikális elemzésnél (Tokenizálás) a JavaCC "mohó" (greedy) illesztést alkalmaz. Ez problémát okozott az alulvonást (`_`) tartalmazó tokeneknél.
-* **Probléma:** Az általános azonosítók (pl. `my_variable`) és a specifikus időegység literálok (pl. `30_minutes`) szerkezete hasonló. A lexer hajlamos volt az időegységet is sima azonosítónak tekinteni.
-* **Megoldás:** A `.jj` nyelvtanfájlban a token definíciók sorrendjének optimalizálásával és a reguláris kifejezések pontosításával (pl. számjegyekkel kezdődő tokenek prioritása) biztosítottuk a helyes felismerést.
-
-### 5.2. Informatív Hibakezelés
-Az alapértelmezett `ParseException` üzenetek gyakran nem nyújtanak elég segítséget a felhasználónak (pl. csak azt közlik, hogy "szintaktikai hiba").
-* **Megoldás:** Implementáltunk egy saját `ErrorHandler` modult. A `try-catch` blokkban elkapott kivételből kinyerjük a hibás tokent, majd **Levenshtein-távolság** algoritmus segítségével megkeressük a hozzá leghasonlóbb valid kulcsszót. Így a rendszer nem csak jelzi a hibát, hanem javítási javaslatot is tesz (*"Did you mean...?"*).
+The `PythonGenerator` class generates a Python script from a monitor configuration, which executes the drift and feature drift checks.
 
 ---
 
-## 6. Adatstruktúra (AST Vizualizáció)
-A parser a bemeneti szöveg feldolgozása során egy hierarchikus objektummodellt, úgynevezett Absztrakt Szintaxis Fát (AST) épít fel. Ez a struktúra képezi az alapját a későbbi validációnak és kódgenerálásnak.
+## 5. Development Challenges and Solutions
 
-Az alábbi ábra a `MonitorConfig` objektum felépítését szemlélteti:
-MonitorConfig (Gyökérelem)
+Several technical challenges were addressed to ensure robust functionality:
+
+### 5.1 Token Conflicts and Greedy Matching
+
+In lexical analysis (tokenization), JavaCC applies "greedy" matching. This caused issues with tokens containing underscores (`_`).
+
+* **Problem:** General identifiers (e.g., `my_variable`) and specific time-unit literals (e.g., `30_minutes`) have similar structures. The lexer could mistakenly treat time units as simple identifiers.
+* **Solution:** Optimized the order of token definitions in the `.jj` grammar file and refined regular expressions (e.g., giving precedence to tokens starting with digits) to ensure correct recognition.
+
+### 5.2 Informative Error Handling
+
+Default `ParseException` messages often provide insufficient user guidance (e.g., just "syntax error").
+
+* **Solution:** Implemented a custom `ErrorHandler` module. From the caught exception in a `try-catch` block, the invalid token is extracted, and the **Levenshtein distance** algorithm is used to find the closest valid keyword. This allows the system to not only indicate the error but also suggest a correction (*"Did you mean...?"*).
+
+---
+
+## 6. Data Structure (AST Visualization)
+
+During parsing, a hierarchical object model called the Abstract Syntax Tree (AST) is constructed. This structure underpins validation and code generation.
+
+The following diagram illustrates the structure of a `MonitorConfig` object:
+
+```plaintext
+MonitorConfig (Root)
  │
  ├── monitorName: String ("FraudModel")
  ├── source: String ("kafka_stream")
  ├── baseline: String ("training_v1")
  │
- ├── driftCheck: DriftCheckConfig (Kötelező)
+ ├── driftCheck: DriftCheckConfig (Required)
  │    ├── method: String ("wasserstein_distance")
  │    ├── threshold: Double (0.15)
  │    ├── interval: Integer + Unit (2 hours)
  │    └── alerts: List<String> ["slack", "email"]
  │
- ├── featureDrift: FeatureDriftConfig (Opcionális)
+ ├── featureDrift: FeatureDriftConfig (Optional)
  │    ├── features: List<String> ["age", "income"]
  │    ├── method: String ("ks_test")
  │    └── significance: Double (0.05)
  │
- └── metadata: MetadataConfig (Opcionális)
+ └── metadata: MetadataConfig (Optional)
       ├── owner: String
       └── version: String
 ```
 
-## 7. Futtatási Útmutató
+---
 
-### Előfeltételek
+## 7. Execution Guide
+
+### Prerequisites
 
 * Java JDK 8+
-* JavaCC telepítve
+* JavaCC installed
 
-### Fordítás
+### Compilation
 
 ```bash
 javacc -OUTPUT_DIRECTORY=src/parser grammar/DriftConfig.jj
@@ -162,11 +180,12 @@ mkdir bin
 javac -d bin -sourcepath src src/main/*.java src/ast/*.java src/parser/*.java
 ```
 
-### Futtatás
+### Execution
 
 ```bash
-# Egy fájl elemzése és Python generálása
+# Parse a file and generate Python
 java -cp bin main.Main test/positive/test1.drift -g
-# Teljes tesztkészlet
+
+# Run full test suite
 java -cp bin main.Main --run-all-tests
 ```

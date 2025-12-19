@@ -1,4 +1,3 @@
-````markdown
 # Drift Detection DSL – Fordítóprogram Projekt Dokumentáció
 
 ## 1. Projekt Célja
@@ -263,5 +262,3 @@ java -cp bin main.Main test/positive/test1.drift -g
 # Teljes tesztkészlet
 java -cp bin main.Main --run-all-tests
 ```
-
-````
